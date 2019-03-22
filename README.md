@@ -11,3 +11,4 @@ It requires an LCD + potentiometer, three relays, four buttons, and a temperatur
 - Only uses a timer interrupt via timer1, which is on the Micro, Uno and Mega, so it may be compatible. The design uses 15 digital pins so it might work on the Micro.
 
 Have fun, and Good Luck!
+I tried to make it as solid as I could in 3 days!
