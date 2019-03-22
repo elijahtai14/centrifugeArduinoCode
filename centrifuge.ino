@@ -489,14 +489,17 @@ void loop()
       digitalWrite(onledpin, LOW);
       digitalWrite(bklpin, LOW);
       digitalWrite(fanpin, LOW);
+      digitalWrite(motorpin, LOW);
+      digitalWrite(heatpin, LOW);
       lcd.noDisplay();
-      Serial.println("HERE!");
+      Serial.println("Powering Off");
       Serial.println(tempcutoff);
       putmem(tempcutoff, rpm, runtime);
     }
     // When turning from off to on
     if (!on)
     {
+      Serial.println("Powering On");
       // Reinitialize everything in setup()!
       setup();
       getmem();
@@ -526,7 +529,7 @@ void putmem(int t, int r, int rt)
 // Gets stuff from memory
 void getmem()
 {
-  Serial.println("Getting stuff from Memory");
+  Serial.println("Getting stuff from Memory...");
   
   int vars[] = {settemp, rotpm, runt};
   EEPROM.get(eeAddress, vars);
