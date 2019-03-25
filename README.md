@@ -8,7 +8,7 @@ It requires an LCD + potentiometer, three relays, four buttons, and a temperatur
 - An automatic PID and fan system that tries to keep the temperature sensor within a set range and target temperature
 - An on/off button which keeps the Arduino running but disables the fan, heating pad, motor, and LCD.
 - Settings are stored in EEPROM rather than SRAM so that when the system loses power, important values are stored. My code only updates the      EEPROM when the machine is turned off, otherwise the values are manipulated in SRAM, intended to minimize breakdown.
-- Only uses a timer interrupt via timer1, which is on the Micro, Uno and Mega, so it may be compatible. The design uses 15 digital pins so it might work on the Micro.
+- Only uses a timer interrupt via timer1, which is on the Micro, Uno and Mega, so it may be compatible. The design uses 15 digital pins so it should work on the Micro.
 
 Have fun, and Good Luck!
-I tried to make it as solid as I could in 3 days!
+(I tried to make it as solid as I could in 3 days :D)
