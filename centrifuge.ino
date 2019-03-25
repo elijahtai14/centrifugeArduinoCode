@@ -96,7 +96,7 @@ int runtime = runt;
 // Obviously, we want to put values in EEPROM and not SRAM
 
 // Put stuff in memory, in the order: tempcutoff, rpm, runtime
-void putmem(int t=settemp, int r=rotmp, int rt=runt);
+void putmem(int t=settemp, int r=rotpm, int rt=runt);
 void getmem();
 // Another helper function to convert integers to a time format
 String converttime(int sec);
