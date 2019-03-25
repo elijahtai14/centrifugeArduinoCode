@@ -21,14 +21,14 @@
 #include <LiquidCrystal.h>
 #include <EEPROM.h>
 
-
-// What screen is displaying
+// What screen is displaying, see FSM.jpg to see what state correstponds to what functionalities.
 int state = 0;
 
 // Countdown timer
 int countdown;
 
-// Default variables
+// ===CONSTANTS=== (for customization)
+// Default variables (sets temperature to 38, rpm to 15, runtime to 5 minutes)
 const int settemp = 38, rotpm = 15, runt = 300;
 
 // Variable limits
@@ -38,11 +38,11 @@ const int tempmin = 26, tempmax = 50, rpmmin = 1, rpmmax = 30, runmin = 0, runma
 // If the temp is below this range, heat. If above, fan.
 const int temprange = 1;
 
-
+// ===PINS===
 // These pins control the LCD
 const int rspin = 34, enpin = 32, bklpin = 30, d4pin = 37, d5pin = 35, d6pin = 33, d7pin = 31;
 
-// ===RELAY PINS===
+// ---RELAY PINS---
 // This pin is the relay pin which connects to a fan or a motor
 const int fanpin = 38;
 // I assume there is some motor driver -- would need to look at the specs for that to really implement it.
@@ -52,15 +52,18 @@ const int motorpin = 39;
 const int heatpin = 41;
 
 // These are all the input buttons
-const int onpin = 42, onledpin = 44, backpin = 46, uppin = 50, downpin = 48;
+const int onpin = 42, backpin = 46, uppin = 50, downpin = 48;
+
+// A light to signal the device is on
+const int onledpin = 44;
 
 // EEPROM Storage address
 const int eeAddress = 0;
 
 // Temperature sensor analog pin 
 #define temppin A0
-#define tempbeta 4090 //beta of the thermistor
-#define tempres 10 //pulldown resistor value
+#define tempbeta 4090 // Beta of the thermistor
+#define tempres 10 // Pulldown resistor value, 10k
 
 // Initialize LCD
 LiquidCrystal lcd(rspin, enpin, d4pin, d5pin, d6pin, d7pin);
@@ -68,9 +71,9 @@ LiquidCrystal lcd(rspin, enpin, d4pin, d5pin, d6pin, d7pin);
 // Stores whether the fan should be on
 bool fanon = true;
 // Stores whether the motor should be on
-bool motoron = true;
+bool motoron = false;
 // Stores whether the heat should be on
-bool heaton = true;
+bool heaton = false;
 
 // Stores button values to look for a change (a positive-edge detector).
 int onstate = 0;
@@ -83,31 +86,30 @@ int lastupstate = 0;
 int downstate = 0;
 int lastdownstate = 0;
 
-// Programmed values
+// Initialize variables to default value
 int tempcutoff = settemp;
 int rpm = rotpm;
 int runtime = runt;
 
 
 // ===STORED & RETRIEVE VALUES===:
-// Obviously, we want to put this in EEPROM and not SRAM
+// Obviously, we want to put values in EEPROM and not SRAM
 
 // Put stuff in memory, in the order: tempcutoff, rpm, runtime
-void putmem(int t=25, int r=20, int rt=5);
+void putmem(int t=settemp, int r=rotmp, int rt=runt);
 void getmem();
-
 // Another helper function to convert integers to a time format
 String converttime(int sec);
 
 void setup()
 {
-  // Just for debugging. Not really needed.
+  // Just for debugging - Logs behavior.
   Serial.begin(9600);
   while (!Serial)
   {
-  ;//Wait for serial connection to finish
+   ; // Wait for serial connection to finish
   }
-  
+
   // Initialize Buttons
   pinMode(onpin, INPUT);
   pinMode(backpin, INPUT);
@@ -126,15 +128,13 @@ void setup()
   pinMode(fanpin, OUTPUT);
   pinMode(motorpin, OUTPUT);
   pinMode(heatpin, OUTPUT);
-
+  // (Set the fan to high to begin with, and the motor and heat to low)
   digitalWrite(fanpin, HIGH);
   digitalWrite(motorpin, LOW);
   digitalWrite(heatpin, LOW);
-  
   fanon = true;
   motoron = false;
   heaton = false;
-  
   
   // "Loading" screen that prints "LW Scientific"
   digitalWrite(bklpin, HIGH);
@@ -171,7 +171,7 @@ void setup()
 // Timer1 interrupt 1Hz function
 ISR(TIMER1_COMPA_vect){
   Serial.println("tick");
-  // If the centrifuge is "RUN" state
+  // If the centrifuge is "RUN" state then count down
   if (state == 7 || state == 8)
   {
     countdown = countdown - 1;
@@ -185,7 +185,6 @@ void loop()
   backstate = digitalRead(backpin);
   upstate = digitalRead(uppin);
   downstate = digitalRead(downpin);
-
 
   // ===If DEVICE IS ON===:  
   if (on){
@@ -260,29 +259,31 @@ void loop()
 
     
 
-    // ---BUTTON CHANGES---(state logic therein):
+    // ---BUTTON CHANGES---(state logic, see FSM.jpg to see how the transitions work):
     // If it was the back button
     if (backstate && !lastbackstate)
     {
       lcd.clear();
-      Serial.println("Back ");
+      Serial.println("Back: from ");
       Serial.print(state);
       if (state == 2) {state = 1;}
       else if (state == 3 || state == 6) {state = 2;}
       else if (state == 4 || state == 5) {state = 3;}  
       else if (state == 7 || state == 8) {state = 1;}  
+      Serial.print(" to ");
       Serial.print(state); 
     }
 
-    // If it was the up button
+    // If it was the up button, clear the screen, 
     if (upstate && !lastupstate)
     {
       lcd.clear();
-      Serial.println("Up");
+      Serial.println("Up: from ");
       Serial.print(state);
       if (state == 1) {state = 2;}
       else if (state == 2) {state = 6;}
       else if (state == 3) {state = 4;}  
+      // Note that states 4, 5, and 6 allows the user to alter the runtime, rpm, and tempterature values
       //SET TIME UP (or at maximum value)
       else if (state == 4) 
       {
@@ -321,6 +322,7 @@ void loop()
       }     
       else if (state == 7) {state = 8;}    
       else if (state == 8) {state = 7;} 
+      Serial.print(" to ");
       Serial.print(state); 
     }
 
@@ -328,7 +330,7 @@ void loop()
     if (downstate && !lastdownstate)
     {
       lcd.clear();
-      Serial.println("Down");
+      Serial.println("Down: from ");
       Serial.print(state); 
       if (state == 1) {
         //Start the countdown at the set value
@@ -375,6 +377,7 @@ void loop()
       }   
       else if (state == 7) {state = 8;}    
       else if (state == 8) {state = 7;} 
+      Serial.print(" to "); 
       Serial.print(state); 
     }
 
@@ -436,7 +439,7 @@ void loop()
         lcd.print(tempcutoff);
         lcd.print("C");
 
-        // We decrement in the timer, but we check the timer here just in case:
+        // Check the timer here
         if (countdown < 0)
         {
           countdown = runtime;
@@ -456,7 +459,7 @@ void loop()
         // It is runtime for now, will implement a clock later.
         lcd.print(converttime(countdown)); 
 
-         
+        // Check the timer here
         if (countdown < 0)
         {
           countdown = runtime;
@@ -494,6 +497,7 @@ void loop()
       lcd.noDisplay();
       Serial.println("Powering Off");
       Serial.println(tempcutoff);
+      // Put the info set so far in memory
       putmem(tempcutoff, rpm, runtime);
     }
     // When turning from off to on
@@ -502,14 +506,15 @@ void loop()
       Serial.println("Powering On");
       // Reinitialize everything in setup()!
       setup();
+      // Retrieve the info set so far from memory
       getmem();
     }
-    // Then update the variable to be the opposite of what is was
+    // Then negate the on variable (from on to off or from off to on)
     on = !on;
     Serial.println("On/Off");
   }
 
-  // Update all the states, next frame. past values <- current values for next cycle edge detection.
+  // Update all the states of the buttons for the next frame. past values <- current values for next cycle edge-detection.
   lastonstate = onstate;
   lastbackstate = backstate;
   lastupstate = upstate;
@@ -517,7 +522,7 @@ void loop()
 }
 
 // ===HELPER FUNCTIONS ===
-// Stores stuff in memory
+// Stores temperature, rotations, and runtime in memory
 void putmem(int t, int r, int rt)
 {
   Serial.println("Putting stuff in Memory...");
@@ -534,7 +539,7 @@ void getmem()
   int vars[] = {settemp, rotpm, runt};
   EEPROM.get(eeAddress, vars);
   
-  // If the values are bad, initialize to default vals
+  // If the values are bad, initialize to default values
   if (vars[0] < 0 || vars[1] < 0 || vars[2] < 0)
   {
     tempcutoff = settemp;
@@ -558,9 +563,10 @@ void getmem()
   Serial.println(vars[2]);
 
   // Update the countdown
-  countdown = runtime%30;
+  countdown = runtime % 30;
 }
 
+// Helper function that converts a number of seconds to a minute-time format (m)m:ss
 String converttime(int sec)
 {
   int mins = sec/60;
