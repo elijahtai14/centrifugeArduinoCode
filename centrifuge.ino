@@ -418,7 +418,6 @@ void loop()
         lcd.setCursor(0,1);
         lcd.print(rpm); 
         lcd.print(",000");
-        
       break;
 
       case 6:
