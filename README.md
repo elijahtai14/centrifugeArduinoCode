@@ -11,7 +11,6 @@ It requires an LCD + potentiometer, three relays, four buttons, and a temperatur
 - Only uses a timer interrupt via timer1, which is on the Micro, Uno and Mega, so it may be compatible. The design uses 15 digital pins so it should work on the Micro.
 
 Have fun, and Good Luck!
-(I tried to make it as solid as I could in 3 days, and tried to add a ton of comments and keep good formatting :D)
 
 # Next Steps
-- The code only controls relays that would run the centrifuge, but not the actual motor control itself. Thus, it needs adapting based on          the motor controllers, voltages, etc. Below seems to be code (pretty similar to mine), which just controls a motor with all the necessary calculations. https://github.com/BioHackAcademy/BHA_Centrifuge/blob/master/Arduino%20Code/Centrifuge/Centrifuge.ino
+- The code only controls relays that would run the centrifuge, but not the actual motor control itself. Thus, it needs adapting based on          the specifics of the motor controllers, voltages, etc. Below seems to be code (pretty similar to mine), which just controls a motor with some necessary calculations. https://github.com/BioHackAcademy/BHA_Centrifuge/blob/master/Arduino%20Code/Centrifuge/Centrifuge.ino
